@@ -7,61 +7,204 @@
 using namespace std;
 
 
-string digits = "0123456789";
+string digits = "n0123456789 ";
+int p;
+char operation;
+string subexp, evalstring = "", buildstr;
+string Expr;
+int leftnum, rightnum, minj, maxj;
 
-string BODMAS(string subexp)
+void findtimes()
 {
-	int i,minj,maxj;
-	string buildstr;
-	string test;
-	while (subexp.find("*") != string::npos)
+	operation = '#';  // NULL operation
+	while ((p < subexp.length()) && (operation != '*'))
 	{
-		buildstr = "";
-		int leftnum, rightnum;
-		i = subexp.find("*");
-		minj = i-1;
-		do
+		p++;
+		operation = subexp[p];
+	}
+}
+
+void findplus()
+{
+	operation = '#';  // NULL operation
+	while ((p < subexp.length()) && (operation != '+'))
+	{
+		p++;
+		operation = subexp[p];
+	}
+}
+
+void findminus()
+{
+	operation = '#';  // NULL operation
+	while ((p < subexp.length()) && (operation != '-'))
+	{
+		p++;
+		operation = subexp[p];
+	}
+}
+
+void findleftnum()
+{
+	int i;
+	i = p-1;
+	char digit = ' ';
+	string left;
+	while ( (i >= 0) && (digits.find(digit) != string::npos) )
+	{
+		digit = subexp[i];
+		i--;
+	}
+	if (i < 0) { i = 0; }
+	else
+	{
+		i = i + 2;
+	}
+	left = subexp.substr(i, p - i);
+	if (left[0] == 'n')
+	{
+		left[0] = '-';
+	}
+    leftnum = stoi(left);
+	//cout << "left="<< left << "\n";
+	minj = i;
+	//cout << "leftnum = " << leftnum << "\n";
+	//cout << "minj = " << minj << "\n";
+}
+
+void findrightnum()
+{
+	int i;
+	i = p + 1;
+	char digit = ' ';
+	string right;
+	while ((i < subexp.length()) && (digits.find(digit) != string::npos))
+	{
+		digit = subexp[i];
+		i++;
+	}
+	if (i >= subexp.length()) { i = subexp.length()-1; }
+	else
+	{
+		i = i - 2;
+	}
+	right = subexp.substr(p + 1, i - p);
+	if (right[0] == 'n')
+	{
+		right[0] = '-';
+	}
+	rightnum = stoi(right);
+	//cout << "right = " << right << "\n";
+	maxj = i;
+	//cout << "maxj = " << maxj << "\n";
+	//cout << "rightnum = " << rightnum << "\n";
+}
+
+
+void makebuildstr()
+{
+	buildstr = "";
+	if (minj > 0)
+	{
+		buildstr = subexp.substr(0, minj);
+	}
+	buildstr = buildstr + evalstring;
+	if (maxj < subexp.length() - 1)
+	{
+		buildstr = buildstr + subexp.substr(maxj+1, subexp.length() - maxj);
+	}
+
+}
+
+
+
+string BODMAS()
+{
+	string test;
+
+
+	//cout << "finding * \n";
+	p = 0;
+	while (p < subexp.length())
+	{
+		findtimes();
+		if (operation == '*')
 		{
-			if (digits.find(subexp[minj]) == string::npos)
-			{
-				break;
-			}
-			minj = minj - 1;
-		} while (minj >= 0);
-		if (minj < 0) { minj = 0; }
-		//cout << "j="<<j << "  j-i+1=" << i-j << "\n";
-		leftnum =  stoi(subexp.substr(minj, i - minj));
-		maxj = i + 1;
-		do
-		{
-			if (digits.find(subexp[maxj]) == string::npos)
-			{
-				break;
-			}
-			maxj = maxj + 1;
-		} while (maxj <= subexp.length() -1 );
-		rightnum = stoi(subexp.substr(i+1, maxj-i));
-		if (minj > 0) 
-		{
-			buildstr = subexp.substr(0,minj+1);
+			findleftnum();
+			findrightnum();
+			evalstring = to_string(leftnum * rightnum);
+			makebuildstr();
+			p = minj;
+			subexp = buildstr;
+		//	cout << buildstr << "   press c <enter> to continue";
+		//	cin >> test;
 		}
-		buildstr = buildstr + to_string(leftnum * rightnum);
-		if (maxj < subexp.length() - 1)
+		else
 		{
-			buildstr = buildstr + subexp.substr(maxj, subexp.length() - maxj);
+			p++;
 		}
-		subexp =  buildstr;
-		cout << buildstr << "   press c <enter> to continue" ;
-		cin >> test;
+	}
+	p = 0;
+	//cout << "finding - \n";
+	while (p < subexp.length())
+	{
+		findminus();
+		if (operation == '-')
+		{
+			findleftnum();
+			findrightnum();
+			evalstring = to_string(leftnum - rightnum);
+			if (leftnum - rightnum < 0)
+			{
+				evalstring[0] = 'n';
+			}
+			makebuildstr();
+			p = minj;
+			subexp = buildstr;
+		//	cout << buildstr << "   press c <enter> to continue";
+		//	cin >> test;
+		}
+		else
+		{
+			p++;
+		}
+	}
+	p = 0;
+	//cout << "finding + \n";
+	while (p < subexp.length())
+	{
+		findplus();
+		if (operation == '+')
+		{
+			findleftnum();
+			findrightnum();
+			evalstring = to_string(leftnum + rightnum);
+			makebuildstr();
+			p = minj;
+			subexp = buildstr;
+		//	cout << buildstr << "   press c <enter> to continue";
+		//	cin >> test;
+		}
+		else
+		{
+			p++;
+		}
 	}
 	return subexp;
 }
 
 int main()
 {
-	string Expr;
-	Expr = "2*3*5+7*3+7*2*3";
-    cout << "exp = " << BODMAS(Expr);
+
+	subexp = "-2-2*2+7*3-6*100";
+
+	cout << "exp = " << subexp << "\n";
+    BODMAS();
+	if (subexp[0] == 'n')
+	{
+		subexp[0] = '-';
+	}
+	cout << "exp = " << subexp;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
